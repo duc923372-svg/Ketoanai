@@ -1,0 +1,127 @@
+{
+  "schemaVersion": "1.0.0",
+  "entities": {
+    "users": {
+      "collection": "users",
+      "fields": {
+        "uid": { "type": "string", "required": true },
+        "displayName": { "type": "string", "required": false },
+        "email": { "type": "string", "required": true },
+        "photoURL": { "type": "string", "required": false },
+        "role": { "type": "string", "required": true, "default": "user" },
+        "plan": { "type": "string", "required": true, "default": "free" },
+        "planStatus": { "type": "string", "required": true, "default": "active" },
+        "trialStart": { "type": "string", "required": false },
+        "trialEnd": { "type": "string", "required": false },
+        "aiUsageCount": { "type": "number", "required": false, "default": 0 },
+        "companyName": { "type": "string", "required": false },
+        "taxCode": { "type": "string", "required": false },
+        "phone": { "type": "string", "required": false },
+        "createdAt": { "type": "string", "required": true },
+        "updatedAt": { "type": "string", "required": true }
+      },
+      "subcollections": {
+        "transactions": {
+          "fields": {
+            "id": { "type": "string", "required": true },
+            "code": { "type": "string", "required": true },
+            "type": { "type": "string", "required": true },
+            "amount": { "type": "number", "required": true },
+            "date": { "type": "string", "required": true },
+            "time": { "type": "string", "required": true },
+            "categoryId": { "type": "string", "required": true },
+            "categoryName": { "type": "string", "required": true },
+            "categoryIcon": { "type": "string", "required": false },
+            "description": { "type": "string", "required": true },
+            "paymentMethod": { "type": "string", "required": true },
+            "partnerId": { "type": "string", "required": false },
+            "partnerName": { "type": "string", "required": false },
+            "creator": { "type": "string", "required": false },
+            "status": { "type": "string", "required": true },
+            "notes": { "type": "string", "required": false },
+            "attachments": { "type": "array", "required": false },
+            "aiFlags": { "type": "object", "required": false },
+            "auditLogs": { "type": "array", "required": false },
+            "createdAt": { "type": "string", "required": true }
+          }
+        },
+        "categories": {
+          "fields": {
+            "id": { "type": "string", "required": true },
+            "name": { "type": "string", "required": true },
+            "type": { "type": "string", "required": true },
+            "icon": { "type": "string", "required": true },
+            "color": { "type": "string", "required": true },
+            "transactionCount": { "type": "number", "required": false },
+            "totalAmount": { "type": "number", "required": false },
+            "percentage": { "type": "number", "required": false },
+            "status": { "type": "string", "required": true },
+            "description": { "type": "string", "required": false },
+            "accountCode": { "type": "string", "required": false }
+          }
+        },
+        "partners": {
+          "fields": {
+            "id": { "type": "string", "required": true },
+            "code": { "type": "string", "required": true },
+            "name": { "type": "string", "required": true },
+            "type": { "type": "string", "required": true },
+            "phone": { "type": "string", "required": false },
+            "email": { "type": "string", "required": false },
+            "taxCode": { "type": "string", "required": false },
+            "address": { "type": "string", "required": false },
+            "totalTransactions": { "type": "number", "required": false },
+            "receivableAmount": { "type": "number", "required": false },
+            "payableAmount": { "type": "number", "required": false },
+            "status": { "type": "string", "required": true },
+            "notes": { "type": "string", "required": false }
+          }
+        },
+        "alerts": {
+          "fields": {
+            "id": { "type": "string", "required": true },
+            "code": { "type": "string", "required": true },
+            "title": { "type": "string", "required": true },
+            "description": { "type": "string", "required": true },
+            "severity": { "type": "string", "required": true },
+            "status": { "type": "string", "required": true },
+            "sourceDoc": { "type": "string", "required": false },
+            "detectedAt": { "type": "string", "required": true },
+            "aiRecommendation": { "type": "string", "required": true },
+            "category": { "type": "string", "required": true }
+          }
+        },
+        "chatSessions": {
+          "fields": {
+            "id": { "type": "string", "required": true },
+            "title": { "type": "string", "required": true },
+            "updatedAt": { "type": "string", "required": true },
+            "messages": { "type": "array", "required": true }
+          }
+        },
+        "settings": {
+          "fields": {
+            "companyName": { "type": "string", "required": true },
+            "taxId": { "type": "string", "required": false },
+            "address": { "type": "string", "required": false },
+            "phone": { "type": "string", "required": false },
+            "email": { "type": "string", "required": false },
+            "representative": { "type": "string", "required": false },
+            "chiefAccountant": { "type": "string", "required": false },
+            "fiscalYear": { "type": "string", "required": false },
+            "currency": { "type": "string", "required": false },
+            "accountingStandard": { "type": "string", "required": false }
+          }
+        }
+      }
+    }
+  },
+  "roles": {
+    "admin": {
+      "description": "Administrator with full system and user overview"
+    },
+    "user": {
+      "description": "Standard SaaS tenant with isolated personal ledger data"
+    }
+  }
+}

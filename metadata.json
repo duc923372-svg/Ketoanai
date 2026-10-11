@@ -1,0 +1,6 @@
+{
+  "name": "Kế Toán AI Smart Ledger",
+  "description": "Hệ thống quản lý tài chính, đối soát đơn hàng và kế toán thông minh tích hợp AI dành cho người bán hàng online (Shopee, TikTok Shop, Lazada, FB) và hộ kinh doanh.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
