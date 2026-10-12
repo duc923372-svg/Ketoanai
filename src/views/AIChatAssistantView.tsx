@@ -29,6 +29,7 @@ export const AIChatAssistantView: React.FC = () => {
 
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [sendError, setSendError] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const activeSession = chatSessions.find((s) => s.id === activeChatSessionId) || chatSessions[0];
@@ -46,12 +47,15 @@ export const AIChatAssistantView: React.FC = () => {
     if (!text.trim() || isTyping) return;
 
     setInputMessage('');
+    setSendError('');
     setIsTyping(true);
 
     try {
       await sendMessageToAI(text);
     } catch (e) {
       console.error(e);
+      setInputMessage(text);
+      setSendError(e instanceof Error ? e.message : 'Không thể kết nối Trợ lý AI.');
     } finally {
       setIsTyping(false);
     }
@@ -272,6 +276,7 @@ export const AIChatAssistantView: React.FC = () => {
               <Send className="w-3.5 h-3.5" />
             </button>
           </form>
+          {sendError && <p role="alert" className="mt-2 text-xs text-rose-600">{sendError} Câu hỏi vẫn được giữ lại để bạn thử gửi lại.</p>}
         </div>
       </div>
     </div>

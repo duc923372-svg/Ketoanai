@@ -52,7 +52,7 @@ import {
   getDocs,
 } from '../lib/firebase';
 import { calculateKPIs } from '../utils/formatters';
-import { generateAIChatResponse, checkTransactionAnomalies } from '../utils/aiEngine';
+import { checkTransactionAnomalies } from '../utils/aiEngine';
 import { checkPlanLimit, hasFeature, getPlanDetails } from '../data/planConfig';
 import { sendGmailMessage, generateWelcomeEmailHtml } from '../utils/emailService';
 
@@ -450,6 +450,9 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setAlerts(initialSmartAlerts);
     setProducts(initialProducts);
     setChatSessions(initialChatSessions);
+    if (initialChatSessions.length > 0) {
+      setActiveChatId(initialChatSessions[0].id);
+    }
     setCompanySettings({
       ...initialCompanySettings,
       companyName: profile.companyName || 'CÔNG TY TNHH GIẢI PHÁP SỐ KẾ TOÁN AI VIỆT NAM (XAMPP)',
@@ -528,6 +531,9 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setOrders(initialOrders);
     setProducts(initialProducts);
     setChatSessions(initialChatSessions);
+    if (initialChatSessions.length > 0) {
+      setActiveChatId(initialChatSessions[0].id);
+    }
     setCompanySettings(initialCompanySettings);
   };
 
@@ -1345,9 +1351,9 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const updateCurrentUser = updateProfile;
 
-  // AI Chat Handlers
+  // AI Chat Handlers — sử dụng Groq API (openai/gpt-oss-120b)
   const sendChatMessage = async (text: string) => {
-    if (!text.trim() || (!firebaseUser && !isDemoActive)) return;
+    if (!text.trim() || (!firebaseUser && !isDemoActive && !isXamppActive)) return;
 
     if (!canUseAI()) {
       openUpgradeModal('Giới hạn lượt hỏi Trợ lý Kế toán AI của gói FREE');
@@ -1362,14 +1368,49 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       timestamp: new Date().toTimeString().slice(0, 5),
     };
 
-    const aiRes = generateAIChatResponse(text, transactions, categories, alerts);
+    // Xây dựng context dữ liệu sổ cái để đưa vào prompt
+    const aiContext = {
+      companyName: companySettings.companyName,
+      kpis,
+      transactions: transactions.slice(0, 100).map(({ code, type, amount, date, categoryName, description, paymentMethod, status, platform }) => ({
+        code, type, amount, date, categoryName, description, paymentMethod, status, platform,
+      })),
+      categories: categories.map(({ name, type, accountCode }) => ({ name, type, accountCode })),
+      alerts: alerts.slice(0, 20).map(({ title, description, severity, status, category }) => ({
+        title, description, severity, status, category,
+      })),
+      orders: orders.slice(0, 50).map(({ code, date, platform, productName, quantity, revenue, platformFee, adFee, cogs, netProfit, status }) => ({
+        code, date, platform, productName, quantity, revenue, platformFee, adFee, cogs, netProfit, status,
+      })),
+      products: products.slice(0, 30).map(({ name, sku, sellingPrice, costPrice, unitProfit, profitMargin, totalSold, inventory, status }) => ({
+        name, sku, sellingPrice, costPrice, unitProfit, profitMargin, totalSold, inventory, status,
+      })),
+    };
+
+    // Lịch sử hội thoại để gửi lên Groq (đa lượt)
+    const conversationHistory = (currentSession?.messages || []).slice(-10).map((message) => ({
+      role: (message.sender === 'user' || message.sender === 'USER' ? 'user' : 'assistant') as 'user' | 'assistant',
+      content: message.text,
+    }));
+
+    let answerText: string;
+
+    // Ưu tiên Groq API, fallback về local rule-based engine
+    const { callGroqAPI, isGroqConfigured } = await import('../utils/groqClient');
+    if (isGroqConfigured()) {
+      answerText = await callGroqAPI(text, conversationHistory, aiContext);
+    } else {
+      // Fallback: local rule-based AI engine (không cần internet)
+      const { generateAIChatResponse } = await import('../utils/aiEngine');
+      const localResult = generateAIChatResponse(text, transactions, categories, alerts, orders, products);
+      answerText = localResult.text;
+    }
+
     const aiMsg: ChatMessage = {
       id: `m-${Date.now() + 1}`,
       sender: 'assistant',
-      text: aiRes.text,
+      text: answerText,
       timestamp: new Date().toTimeString().slice(0, 5),
-      analysisCard: aiRes.analysisCard,
-      suggestedFollowUps: aiRes.suggestedFollowUps,
     };
 
     const updatedMessages = [...(currentSession?.messages || []), userMsg, aiMsg];
@@ -1386,7 +1427,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         { merge: true }
       );
 
-      // Increment user AI usage count
+      // Tăng số lượt sử dụng AI
       const userDocRef = doc(db, 'users', firebaseUser.uid);
       await updateDoc(userDocRef, {
         aiUsageCount: (currentUser?.aiUsageCount || 0) + 1,
@@ -1408,7 +1449,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const sendMessageToAI = sendChatMessage;
 
   const createNewChatSession = async () => {
-    if (!firebaseUser && !isDemoActive) return;
+    if (!firebaseUser && !isDemoActive && !isXamppActive) return;
     const newId = `chat-${Date.now()}`;
     const newSession: ChatSession = {
       id: newId,
@@ -1443,7 +1484,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const deleteChatSession = async (id: string) => {
-    if (!firebaseUser && !isDemoActive) return;
+    if (!firebaseUser && !isDemoActive && !isXamppActive) return;
     if (firebaseUser) {
       const sRef = doc(db, 'users', firebaseUser.uid, 'chatSessions', id);
       await deleteDoc(sRef);
@@ -1453,7 +1494,7 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const clearChatHistory = async () => {
-    if (!firebaseUser && !isDemoActive) return;
+    if (!firebaseUser && !isDemoActive && !isXamppActive) return;
     if (firebaseUser) {
       const batch = writeBatch(db);
       chatSessions.forEach((s) => {
