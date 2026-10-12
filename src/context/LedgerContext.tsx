@@ -1393,18 +1393,8 @@ export const LedgerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       content: message.text,
     }));
 
-    let answerText: string;
-
-    // Ưu tiên Groq API, fallback về local rule-based engine
-    const { callGroqAPI, isGroqConfigured } = await import('../utils/groqClient');
-    if (isGroqConfigured()) {
-      answerText = await callGroqAPI(text, conversationHistory, aiContext);
-    } else {
-      // Fallback: local rule-based AI engine (không cần internet)
-      const { generateAIChatResponse } = await import('../utils/aiEngine');
-      const localResult = generateAIChatResponse(text, transactions, categories, alerts, orders, products);
-      answerText = localResult.text;
-    }
+    const { callGroqAPI } = await import('../utils/groqClient');
+    const answerText = await callGroqAPI(text, conversationHistory, aiContext);
 
     const aiMsg: ChatMessage = {
       id: `m-${Date.now() + 1}`,
