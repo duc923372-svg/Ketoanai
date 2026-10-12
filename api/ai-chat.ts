@@ -1,6 +1,6 @@
 import { env } from 'node:process';
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { handleGroqChatRequest } from '../src/server/groqChatHandler';
+import { handleGroqChatRequest } from '../src/server/groqChatHandler.js';
 
 const MAX_BODY_BYTES = 256_000;
 
